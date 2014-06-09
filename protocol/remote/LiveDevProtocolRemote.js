@@ -120,21 +120,28 @@
                     related.scripts[document.scripts[i].src] = true; 
                 }
             }
-            //iterate on document.stylesheets (StyleSheetList doesn't provide forEach iterator).
-            for (var j=0; j < document.styleSheets.length ; j++){
-                var s = document.styleSheets[j];
-                if (s.href) { 
-                    related.stylesheets[s.href] = true; 
-                }
-                //add @imports to related and populate this._imports for tracking changes.
-                var sheets = this._scanImports(s);
-                if (sheets.length > 0) {
-                    this._imports[s.href]=[];
-                    for (var k=0; k < sheets.length; k++) {
-                        related.stylesheets[sheets[k].href] = true;
-                        this._imports[s.href].push(sheets[k].href);
+          
+            var s, j;
+            //traverse @import rules
+            var traverseRules = function _traverseRules(sheet, base) {
+                var i;
+                if (sheet.href && sheet.cssRules) {
+                    if (related.stylesheets[sheet.href] === undefined) {
+                        related.stylesheets[sheet.href] = [];
+                    }
+                    related.stylesheets[sheet.href].push(base);
+                    //console.log("rule in: " + sheet.href + ", base: " + base);
+                    for (i = 0; i < sheet.cssRules.length; i++) {
+                        if (sheet.cssRules[i].href) {
+                            traverseRules(sheet.cssRules[i].styleSheet, base);
+                        }
                     }
                 }
+            };
+            //iterate on document.stylesheets (StyleSheetList doesn't provide forEach iterator).
+            for (j = 0; j < document.styleSheets.length; j++) {
+                s = document.styleSheets[j];
+                traverseRules(s, s.href);
             }
             return related;
         },
