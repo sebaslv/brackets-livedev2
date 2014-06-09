@@ -157,11 +157,9 @@ define(function (require, exports, module) {
      * @return {function} The constructor for the live document class; will be a subclass of LiveDocument.
      */
     function _classForDocument(doc) {
-        // TODO: not yet required in the prototype - this will only be called with CSS files
-        // once we start gathering related CSS documents. See "styleSheetAdded()" below.
-//        if (doc.getLanguage().getId() === "css") {
-//            return LiveCSSDocument;
-//        }
+        if (doc.getLanguage().getId() === "css") {
+            return LiveCSSDocument;
+        }
 
         if (_isHtmlFileExt(doc.file.fullPath)) {
             return LiveHTMLDocument;
@@ -287,11 +285,12 @@ define(function (require, exports, module) {
      * editor and the browser.
      * @param {Document} doc
      * @param {Editor} editor
+     * @param {Connections} connections
      * @return {?LiveDocument} The live document, or null if this type of file doesn't support live editing.
      */
-    function _createLiveDocument(doc, editor) {
+    function _createLiveDocument(doc, editor, connections) {
         var DocClass        = _classForDocument(doc),
-            liveDocument    = new DocClass(_protocol, _resolveUrl, doc, editor);
+            liveDocument    = new DocClass(_protocol, _resolveUrl, doc, editor, connections);
 
         if (!DocClass) {
             return null;
@@ -337,6 +336,7 @@ define(function (require, exports, module) {
         // Also, the stylesheet may already exist and be reported as added twice
         // due to Chrome reporting added/removed events after incremental changes
         // are pushed to the browser
+        console.log("styleSheetAdded: " + url);
         if (!path || alreadyAdded) {
             return;
         }
@@ -346,11 +346,11 @@ define(function (require, exports, module) {
         docPromise.done(function (doc) {
             if ((_classForDocument(doc) === LiveCSSDocument) &&
                     (!_liveDocument || (doc !== _liveDocument.doc))) {
-                var liveDoc = _createLiveDocument(doc);
+                var liveDoc = _createLiveDocument(doc, null, _liveDocument.connections);
                 if (liveDoc) {
                     _server.add(liveDoc);
                     _relatedDocuments[doc.url] = liveDoc;
-
+                    _setStatus(STATUS_ACTIVE); // since opening one of the related docs
                     $(liveDoc).on("deleted.livedev", _handleRelatedDocumentDeleted);
                 }
             }
@@ -570,6 +570,18 @@ define(function (require, exports, module) {
                     if (doc && url === _resolveUrl(doc.file.fullPath)) {
                         _setStatus(STATUS_ACTIVE);
                     }
+                    //:TODO - A delay introduced here since sometimes the related docs are not loaded yet at connect
+                    // This is a temp solution.
+                    setTimeout(function () {
+                        var getRelatedPromise;
+                        getRelatedPromise = _liveDocument.getRelated();
+                        getRelatedPromise.done(function (relatedDocs) {
+                            var docs = Object.keys(relatedDocs.stylesheets);
+                            docs.forEach(function (url) {
+                                _styleSheetAdded(null, url);
+                            });
+                        });
+                    }, 500);
                 });
             } else {
                 console.error("LiveDevelopment._open(): No server active");
@@ -653,6 +665,41 @@ define(function (require, exports, module) {
     }
 
     /**
+     * @private
+     * When switching documents, close the current preview and open a new one.
+     * TODO: closing the current preview doesn't actually work in the new architecture.
+     */
+    function _onDocumentChange() {
+        var doc = _getCurrentDocument();
+        if (!isActive() || !doc) {
+            return;
+        }
+        
+        // close the current session and begin a new session
+        var docUrl = _server && _server.pathToUrl(doc.file.fullPath),
+            isViewable = _server && _server.canServe(doc.file.fullPath);
+        
+        if (isViewable) {
+            // Update status
+            _setStatus(STATUS_CONNECTING);
+
+            // clear live doc and related docs
+            _closeDocuments();
+
+            // create new live doc
+            _createLiveDocumentForFrame(doc);
+
+            open();
+        }
+        $(_liveDocument).one("connect", function (event, url) {
+            var doc = _getCurrentDocument();
+            if (doc && url === _resolveUrl(doc.file.fullPath)) {
+                _setStatus(STATUS_ACTIVE);
+            }
+        });
+    }
+
+    /**
      * Open a live preview on the current docuemnt.
      */
     function open() {
@@ -682,35 +729,6 @@ define(function (require, exports, module) {
         });
     }
     
-    /**
-     * @private
-     * When switching documents, close the current preview and open a new one.
-     * TODO: closing the current preview doesn't actually work in the new architecture.
-     */
-    function _onDocumentChange() {
-        var doc = _getCurrentDocument();
-        if (!isActive() || !doc) {
-            return;
-        }
-        
-        // close the current session and begin a new session
-        var docUrl = _server && _server.pathToUrl(doc.file.fullPath),
-            isViewable = _server && _server.canServe(doc.file.fullPath);
-        
-        if (isViewable) {
-            // Update status
-            _setStatus(STATUS_CONNECTING);
-
-            // clear live doc and related docs
-            _closeDocuments();
-
-            // create new live doc
-            _createLiveDocumentForFrame(doc);
-
-            open();
-        }
-    }
-
     /**
      * For files that don't support as-you-type live editing, but are loaded by live HTML documents
      * (e.g. JS files), we want to reload the full document when they're saved.
