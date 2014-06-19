@@ -37,6 +37,35 @@
     //     send(msgStr) - sends the given message string over the transport.
     var transport = global._Brackets_LiveDev_Transport;
     
+    var MessageBroker = {
+                
+        _handlers: {},
+        
+        message: function (msg) {
+            if (this._handlers.hasOwnProperty(msg.method)) {
+                this._handlers[msg.method].forEach(function (handler) {
+                    handler(msg);
+                });
+            }
+        },
+        
+        respond: function (orig, response) {
+            response.id = orig.id;
+            transport.send(JSON.stringify(response));
+        },
+        
+        on: function (method, handler) {
+            if (!this._handlers[method]) {
+                this._handlers[method] = [];
+            }
+            this._handlers[method].push(handler);
+        },
+        
+        send: function (msgStr) {
+            transport.send(JSON.stringify(msgStr));
+        }
+    };
+    
     //TODO: Protocol should probably have a method addWatcher to dynamically inject oberservers
     var DocumentObserver = {
         
@@ -48,7 +77,7 @@
             //start listening to node changes
             this._enableListeners();
             //send the current status of related docs. 
-            transport.send(JSON.stringify({
+            MessageBroker.send(JSON.stringify({
                 type: "Document.Related",
                 related: this.related()
             }));
@@ -147,14 +176,14 @@
             for (i = 0; i < nodes.length; i++) {
                 //check for Javascript files
                 if (nodes[i].nodeName === "SCRIPT" && nodes[i].src) {
-                    transport.send(JSON.stringify({
+                    MessageBroker.send(JSON.stringify({
                         type: 'Script.' + action,
                         src: nodes[i].src
                     }));
                 }
                 //check for stylesheets
                 if (nodes[i].nodeName === "LINK" && nodes[i].rel === "stylesheet" && nodes[i].href) {
-                    transport.send(JSON.stringify({
+                    MessageBroker.send(JSON.stringify({
                         type: 'Stylesheet.' + action,
                         href: nodes[i].href
                     }));
@@ -170,47 +199,39 @@
         stop: function () {}
     };
 
+    
+        
+    /*
+    * Runtime Domain
+    */
+    var Runtime = {
+        evaluate: function (msg) {
+            console.log("Runtime.evaluate");
+            var result = eval(msg.params.expression);
+            console.log("result: " + result);
+            MessageBroker.respond(msg, {
+                result: JSON.stringify(result) // TODO: in original protocol this is an object handle
+            });
+        }
+    };
+    
+    // subscribe handlers to methods
+    MessageBroker.on("Runtime.evaluate", Runtime.evaluate);
+    
+        
     /**
      * The remote handler for the protocol.
      */
     var ProtocolHandler = {
         /**
-         * Handles a message from the transport. Parses it as JSON and looks at the
-         * "method" field to determine what the action is.
+         * Handles a message from the transport. Parses it as JSON and delegates
+         * to MessageBroker who is in charge of routing them to subscribers.
          * @param {msgStr} string The protocol message as stringified JSON.
          */
         message: function (msgStr) {
             console.log("received: " + msgStr);
             var msg = JSON.parse(msgStr);
-            
-            // TODO: more easily extensible way of adding protocol handler methods
-            if (msg.method === "Runtime.evaluate") {
-                console.log("evaluating: " + msg.params.expression);
-                var result = eval(msg.params.expression);
-                console.log("result: " + result);
-                this.respond(msg, {
-                    result: JSON.stringify(result) // TODO: in original protocol this is an object handle
-                });
-            }
-            //DocumentWatcher should probably register this method.
-            if (msg.method === "Document.Related") {
-                console.log("Document.Related");
-                var related = DocumentObserver.related();
-                this.respond(msg, {
-                    related: JSON.stringify(related)
-                });
-            }
-        },
-        
-        /**
-         * Responds to a message, setting the response message's ID to the same ID as the
-         * original request.
-         * @param {Object} orig The original message object.
-         * @param {Object} response The response message object.
-         */
-        respond: function (orig, response) {
-            response.id = orig.id;
-            transport.send(JSON.stringify(response));
+            MessageBroker.message(msg);
         }
     };
     
