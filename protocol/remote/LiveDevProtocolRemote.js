@@ -78,7 +78,6 @@
                         related.stylesheets[sheet.href] = [];
                     }
                     related.stylesheets[sheet.href].push(base);
-                    //console.log("rule in: " + sheet.href + ", base: " + base);
                     for (i = 0; i < sheet.cssRules.length; i++) {
                         if (sheet.cssRules[i].href) {
                             traverseRules(sheet.cssRules[i].styleSheet, base);

@@ -50,7 +50,6 @@ function ExtendRemoteFunctions(obj) {
                 // if the link element to change 
                 head.appendChild(s); // insert the style element here
                 node.disabled = true;
-                console.log('creating');
             } else if (node.href !== url && node.ownerNode.id === url) {
                 // now can remove the style element previously created (if any)
                 node.ownerNode.parentNode.removeChild(node.ownerNode);
@@ -58,5 +57,20 @@ function ExtendRemoteFunctions(obj) {
         }
         s.id = url;
     };
+    
+    ExtendedObj.prototype.loadPageTimeoutId = 0;
+    ExtendedObj.prototype.loadPage = function loadPage(url) {
+        
+        // first check and clear if the previous timer is still waiting
+        //:TODO: More work needs to be done to handle the ws connections properly in the case that user quickly 
+        // switches docs before each is loaded and connected.
+        if (this.loadPageTimeoutId) {
+            clearTimeout(this.loadPageTimeoutId);
+        }
+        this.loadPageTimeoutId = setTimeout(function () {
+            window.location = url;
+        }, 500);
+    };
+
     return new ExtendedObj();
 }
