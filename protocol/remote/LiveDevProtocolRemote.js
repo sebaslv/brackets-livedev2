@@ -176,17 +176,17 @@
             for (i = 0; i < nodes.length; i++) {
                 //check for Javascript files
                 if (nodes[i].nodeName === "SCRIPT" && nodes[i].src) {
-                    MessageBroker.send(JSON.stringify({
+                    MessageBroker.send({
                         method: 'Script.' + action,
                         src: nodes[i].src
-                    }));
+                    });
                 }
                 //check for stylesheets
                 if (nodes[i].nodeName === "LINK" && nodes[i].rel === "stylesheet" && nodes[i].href) {
-                    MessageBroker.send(JSON.stringify({
+                    MessageBroker.send({
                         method: 'Stylesheet.' + action,
                         href: nodes[i].href
-                    }));
+                    });
                     // TODO: check for @import rules. 
                     // It seems that node we get from MutationRecord doesn't have the entire information:
                     //  - Added stylesheet has import rules (wich give us relative URL) but in Chrome, 
