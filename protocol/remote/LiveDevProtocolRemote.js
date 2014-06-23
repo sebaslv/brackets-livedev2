@@ -77,10 +77,10 @@
             //start listening to node changes
             this._enableListeners();
             //send the current status of related docs. 
-            MessageBroker.send(JSON.stringify({
+            MessageBroker.send({
                 type: "Document.Related",
                 related: this.related()
-            }));
+            });
         },
         
         /*  Retrieves related documents (external CSS and JS files) */
@@ -199,6 +199,21 @@
         stop: function () {}
     };
 
+    /*
+    * Page Domain
+    */
+    var Page = {
+        enable: function (msg) {
+            DocumentObserver.start();
+        },
+        reload: function (msg) {
+            window.location.reload(msg.ignoreCache);
+        }
+    };
+        
+    // subscribe handlers to methods
+    MessageBroker.on("Page.enable", Page.enable);
+    MessageBroker.on("Page.reload", Page.reload);
     
         
     /*
@@ -242,14 +257,5 @@
     }
     
     transport.setCallbacks(ProtocolHandler);
-    
-    
-    window.addEventListener('load', function () {
-        DocumentObserver.start();
-    });
-    
-    window.addEventListener('unload', function () {
-        DocumentObserver.stop();
-    });
     
 }(this));

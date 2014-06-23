@@ -129,4 +129,23 @@
         }
     };
     global._Brackets_LiveDev_Transport = WebSocketTransport;
+    
+    
+    // Registering listeners for document load event since it's the first injected
+    // script being executed. These events  provide better control for executing commands
+    // at the protocol layer.
+    // TODO: This should probably be part of the protocol layer? it seems to be late in some cases.
+    
+    window.addEventListener('load', function (evt) {
+        WebSocketTransport.send(JSON.stringify({
+            method: "Page.loadEventFired"
+        }));
+    });
+    
+    window.addEventListener('unload', function (evt) {
+        WebSocketTransport.send(JSON.stringify({
+            method: "Page.unloadEventFired"
+        }));
+    });
+    
 }(this));

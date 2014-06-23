@@ -77,6 +77,7 @@ define(function (require, exports, module) {
      */
     function _receive(clientId, msgStr) {
         var msg = JSON.parse(msgStr),
+            method = msg.method || "event",
             deferred;
         if (msg.id) {
             deferred = _responseDeferreds[msg.id];
@@ -89,7 +90,7 @@ define(function (require, exports, module) {
                 }
             }
         } else {
-            $(exports).triggerHandler("event", [clientId, msg]);
+            $(exports).triggerHandler(method, [clientId, msg]);
         }
     }
     
@@ -201,10 +202,40 @@ define(function (require, exports, module) {
         _transport.close(clientId);
     }
     
+    /*
+    * Page Domain 
+    */
+    var Page = {
+        
+        enable: function (clients) {
+            return _send(
+                clients,
+                {
+                    method: "Page.enable",
+                    params: {}
+                }
+            );
+        },
+        
+        reload: function (clients, ignoreCache) {
+            return _send(
+                clients,
+                {
+                    method: "Page.reload",
+                    params: {
+                        ignoreCache: ignoreCache
+                    }
+                }
+            );
+        }
+    };
+    
     exports.setTransport = setTransport;
     exports.getRemoteScript = getRemoteScript;
     exports.launch = launch;
     exports.evaluate = evaluate;
     exports.getRelated = getRelated;
     exports.close = close;
+    
+    exports.Page = Page;
 });

@@ -97,6 +97,12 @@ define(function (require, exports, module) {
                 // TODO: handle error, wasThrown?
                 self.protocol.evaluate([clientId], command);
             });
+            
+            // wait for remote page is loaded and enable remote Page Domain 
+            // which starts observation of node changes
+            $(self.protocol).on('Page.loadEventFired', function () {
+                self.protocol.Page.enable([clientId]);
+            });
         }
         
         // TODO: race condition if the version of the instrumented HTML that the browser loaded is out of sync with
@@ -326,7 +332,7 @@ define(function (require, exports, module) {
     
     
     LiveHTMLDocument.prototype.reload = function () {
-        this.protocol.evaluate(this.parentClass.getConnectionIds.call(this), "document.location.reload()");
+        return this.protocol.Page.reload(this.getConnectionIds(), true);
     };
 
     LiveHTMLDocument.prototype.getRelated = function () {
