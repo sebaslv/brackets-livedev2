@@ -78,7 +78,7 @@
             this._enableListeners();
             //send the current status of related docs. 
             MessageBroker.send({
-                type: "Document.Related",
+                method: "Document.Related",
                 related: this.related()
             });
         },
@@ -177,14 +177,14 @@
                 //check for Javascript files
                 if (nodes[i].nodeName === "SCRIPT" && nodes[i].src) {
                     MessageBroker.send(JSON.stringify({
-                        type: 'Script.' + action,
+                        method: 'Script.' + action,
                         src: nodes[i].src
                     }));
                 }
                 //check for stylesheets
                 if (nodes[i].nodeName === "LINK" && nodes[i].rel === "stylesheet" && nodes[i].href) {
                     MessageBroker.send(JSON.stringify({
-                        type: 'Stylesheet.' + action,
+                        method: 'Stylesheet.' + action,
                         href: nodes[i].href
                     }));
                     // TODO: check for @import rules. 
