@@ -292,6 +292,25 @@ define(function (require, exports, module) {
         );
     }
     
+     /**
+     * Protocol method. Rretrieves the content of a given stylesheet
+     * @param {number|Array.<number>} clients A client ID or array of client IDs that should navigate to the given URL.
+     * @param {string} url Absolute URL that identifies the stylesheet.
+     * @return {$.Promise} A promise that's resolved with the return value from the first client that responds
+     *      to the method.
+     */
+    function getStyleSheetText(url, clients) {
+        return _send(
+            {
+                method: "CSS.getStyleSheetText",
+                params: {
+                    url: url
+                }
+            },
+            clients
+        );
+    }
+    
     /**
      * Closes the connection to the given client. Proxies to the transport.
      * @param {number} clientId
@@ -315,6 +334,7 @@ define(function (require, exports, module) {
     exports.evaluate = evaluate;
     exports.reload = reload;
     exports.navigate = navigate;
+    exports.getStyleSheetText = getStyleSheetText;
     exports.close = close;
     exports.getConnectionIds = getConnectionIds;
     exports.closeAllConnections = closeAllConnections;

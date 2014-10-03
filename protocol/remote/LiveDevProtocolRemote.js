@@ -102,7 +102,7 @@
                 return;
             }
             response.id = orig.id;
-            this.send(JSON.stringify(response));
+            this.send(response);
         },
         
         /**
@@ -143,7 +143,7 @@
             console.log("Runtime.evaluate");
             var result = eval(msg.params.expression);
             MessageBroker.respond(msg, {
-                result: JSON.stringify(result) // TODO: in original protocol this is an object handle
+                result: result // TODO: in original protocol this is an object handle
             });
         }
     };
@@ -242,6 +242,42 @@
     
     // exposing ProtocolManager
     global._Brackets_LiveDev_ProtocolManager = ProtocolManager;
+    
+    /**
+     * CSS Domain.
+     */
+    var CSS = {
+        /**
+         * retrieves the content of the stylesheet
+         * TODO: it now depends on reloadCSS implementation
+         */
+        getStyleSheetText: function (msg) {
+            var i,
+                sheet,
+                text;
+            for (i = 0; i < document.styleSheets.length; i++) {
+                sheet = document.styleSheets[i];
+                // if it was already 'reloaded'
+                if (sheet.ownerNode.id ===  msg.params.url) {
+                    text = sheet.ownerNode.innerText;
+                }
+                // if it was not already 'reloaded'
+                if (!sheet.disabled && sheet.href === msg.params.url) {
+                    var j,
+                        rules = document.styleSheets[i].cssRules;
+                    text = "";
+                    for (j = 0; j < rules.length; j++) {
+                        text += rules[j].cssText + '\n';
+                    }
+                }
+            }
+            MessageBroker.respond(msg, {
+                text: text
+            });
+        }
+    };
+    
+    MessageBroker.on("CSS.getStyleSheetText", CSS.getStyleSheetText);
     
     /**
      * The remote handler for the protocol.

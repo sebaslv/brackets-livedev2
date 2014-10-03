@@ -94,16 +94,15 @@ define(function LiveCSSDocumentModule(require, exports, module) {
      * @return {jQuery.promise} Promise resolved with the text content of this CSS document
      */
     LiveCSSDocument.prototype.getSourceFromBrowser = function () {
-        // TODO: Only used for unit testing. Need to add protocol API to extract stylesheet from browser side.
-//        var deferred = new $.Deferred(),
-//            styleSheetId = this._getStyleSheetHeader().styleSheetId,
-//            inspectorPromise = Inspector.CSS.getStyleSheetText(styleSheetId);
-//        
-//        inspectorPromise.then(function (res) {
-//            deferred.resolve(res.text);
-//        }, deferred.reject);
-//        
-//        return deferred.promise();
+        // Only used for unit testing. 
+        var deferred = new $.Deferred();
+        
+        this.protocol.getStyleSheetText(this.doc.url)
+            .then(function (res) {
+                deferred.resolve(res.text);
+            }, deferred.reject);
+        
+        return deferred.promise();
     };
  
     /**
@@ -125,7 +124,7 @@ define(function LiveCSSDocumentModule(require, exports, module) {
             if (this.doc.url !== this.roots[i]) {
                 // if it's not directly included through <link>,
                 // reload the original doc
-                $(this).triggerHandler("updateDoc", this.roots[i]);
+                //$(this).triggerHandler("updateDoc", this.roots[i]);
             } else {
                 this.protocol.evaluate("_LD.reloadCSS(" +
                                        JSON.stringify(this.doc.url) + ", " +
