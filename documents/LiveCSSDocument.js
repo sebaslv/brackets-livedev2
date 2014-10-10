@@ -100,7 +100,10 @@ define(function LiveCSSDocumentModule(require, exports, module) {
         this.protocol.getStyleSheetText(this.doc.url)
             .then(function (res) {
                 deferred.resolve(res.text);
-            }, deferred.reject);
+            })
+            .fail(function (err) {
+                deferred.reject(err);
+            });
         
         return deferred.promise();
     };
