@@ -355,7 +355,7 @@ define(function (require, exports, module) {
                     $(liveDoc).on("updateDoc", function (event, url) {
                         var path = _server.urlToPath(url),
                             doc = getLiveDocForPath(path);
-                        doc.updateBrowser();
+                        doc._updateBrowser();
                     });
                 }
             }

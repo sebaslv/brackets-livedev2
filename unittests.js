@@ -268,6 +268,50 @@ define(function (require, exports, module) {
                     expect(fixSpaces(browserText)).toBe(fixSpaces(localText));
                 });
             });
+            
+            it("should push in memory css changes made before the session starts", function () {
+                var localText,
+                    browserText;
+                
+                runs(function () {
+                    waitsForDone(SpecRunnerUtils.openProjectFiles(["simple1.css"]), "SpecRunnerUtils.openProjectFiles simple1.css", 1000);
+                });
+                
+                runs(function () {
+                    var curDoc =  DocumentManager.getCurrentDocument();
+                    localText = curDoc.getText();
+                    localText += "\n .testClass { background-color:#090; }\n";
+                    curDoc.setText(localText);
+
+                    // Document should not be marked dirty
+                    expect(LiveDevelopment.status).not.toBe(LiveDevelopment.STATUS_OUT_OF_SYNC);
+                });
+                
+                runs(function () {
+                    waitsForDone(SpecRunnerUtils.openProjectFiles(["simple1.html"]), "SpecRunnerUtils.openProjectFiles simple1.html", 1000);
+                });
+                
+                waitsForLiveDevelopmentToOpen();
+            
+                
+                var liveDoc, doneSyncing = false;
+                runs(function () {
+                    liveDoc = LiveDevelopment.getLiveDocForPath(testFolder + "simple1.css");
+                });
+
+                runs(function () {
+                    liveDoc.getSourceFromBrowser().done(function (text) {
+                        browserText = text;
+                    }).always(function () {
+                        doneSyncing = true;
+                    });
+                });
+                waitsFor(function () { return doneSyncing; }, "Browser to sync changes", 10000);
+                
+                runs(function () {
+                    expect(fixSpaces(browserText)).toBe(fixSpaces(localText));
+                });
+            });
         });
     });
 });

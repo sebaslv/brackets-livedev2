@@ -121,7 +121,7 @@ define(function LiveCSSDocumentModule(require, exports, module) {
     /**
      * When the user edits the file, update the stylesheet in the browser and redraw highlights.
      */
-    LiveCSSDocument.prototype.updateBrowser = function () {
+    LiveCSSDocument.prototype._updateBrowser = function () {
         var i;
         for (i = 0; i < this.roots.length; i++) {
             if (this.doc.url !== this.roots[i]) {
@@ -179,7 +179,7 @@ define(function LiveCSSDocumentModule(require, exports, module) {
      * @param {Object} change
      */
     LiveCSSDocument.prototype.onChange = function (event, editor, change) {
-        this.updateBrowser();
+        this._updateBrowser();
     };
 
     /** 
