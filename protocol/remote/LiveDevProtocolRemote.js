@@ -257,18 +257,16 @@
                 text;
             for (i = 0; i < document.styleSheets.length; i++) {
                 sheet = document.styleSheets[i];
-                // if it was already 'reloaded'
-                if (sheet.ownerNode.id ===  msg.params.url) {
-                    text = sheet.ownerNode.innerText;
-                }
-                // if it was not already 'reloaded'
-                if (!sheet.disabled && sheet.href === msg.params.url) {
+                // if it was not 'reloaded'
+                if ((!sheet.disabled) && (sheet.href === msg.params.url)) {
                     var j,
                         rules = document.styleSheets[i].cssRules;
                     text = "";
                     for (j = 0; j < rules.length; j++) {
                         text += rules[j].cssText + '\n';
                     }
+                } else if (sheet.ownerNode.id ===  msg.params.url) { // if it was already 'reloaded'
+                    text = sheet.ownerNode.innerText;
                 }
             }
             MessageBroker.respond(msg, {
